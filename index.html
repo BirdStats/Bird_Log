@@ -79,6 +79,7 @@ r = birding_report.build_report(list(paths), "/home/pyodide/BirdReference.csv", 
 `);
     const [text, html] = result.toJs();
     log(text);
+    if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({path: 'report-made', title: 'Report made', event: true});
     const url = URL.createObjectURL(new Blob([html], {type: 'text/html'}));
     $('out').innerHTML = `<a class="dl" href="${url}" target="_blank">Open report</a> &nbsp;·&nbsp; <a class="dl" href="${url}" download="birding_report.html">Download a copy</a>`;
     if (w) { w.location.href = url; log('Done. The report is open in a new tab.'); }
@@ -89,6 +90,7 @@ r = birding_report.build_report(list(paths), "/home/pyodide/BirdReference.csv", 
   } finally { $('go').disabled = false; }
 });
 </script>
+
 <script data-goatcounter="https://birdstats.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
 </body>
