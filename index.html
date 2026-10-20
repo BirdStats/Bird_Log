@@ -7,6 +7,7 @@
 <style>
   body{font:16px/1.5 system-ui,sans-serif;max-width:640px;margin:40px auto;padding:0 16px;color:#13201A;background:#F2F4EF}
   h1{font-family:Georgia,serif;margin:0 0 4px}
+  h2{font-family:Georgia,serif;font-size:19px;margin:0 0 8px}
   .card{background:#fff;border:1px solid #CBD3C8;border-radius:12px;padding:18px;margin-top:18px}
   label{display:block;margin:12px 0 4px;font-size:14px;color:#56655C}
   input[type=text],select{width:100%;height:38px;padding:0 10px;border:1px solid #CBD3C8;border-radius:8px;font:inherit}
@@ -14,11 +15,28 @@
   button:disabled{opacity:.5;cursor:wait}
   pre{white-space:pre-wrap;font-size:13px;color:#56655C;margin:0}
   a.dl{display:inline-block;margin-top:14px;font-weight:600}
+  ol,ul{margin:6px 0 0;padding-left:22px}
+  li{margin-bottom:6px}
+  .small{font-size:13.5px;color:#56655C}
+  footer{margin-top:28px;font-size:13px;color:#56655C;text-align:center}
 </style>
 </head>
 <body>
 <h1>Make your bird log</h1>
-<p>Pick your eBird, Roberts or BirdLasser CSV. Everything runs in your browser; your file is not uploaded anywhere.</p>
+<p>Turn your bird sightings into an interactive page with maps, a life list, target hotspots and charts of your birding over the years.</p>
+
+<div class="card">
+  <h2>How it works</h2>
+  <ol>
+    <li>Export your sightings as a <b>CSV file</b> from your birding app or website (for example eBird, the Roberts Bird app or BirdLasser).</li>
+    <li>Click <b>Choose File</b> below and pick that CSV. You can pick more than one; sightings logged in both are counted once.</li>
+    <li>Type a heading for your page and choose whether bird names open in Afrikaans or English. You can switch inside the report too.</li>
+    <li>Wait for the button to say <b>Make my report</b> (the first load takes 10 to 20 seconds), then click it.</li>
+    <li>Your report opens in a new tab. Use <b>Download a copy</b> if you want to keep it or send it to someone.</li>
+  </ol>
+  <p class="small"><b>Your privacy:</b> everything happens inside your own browser. Your file is never uploaded, and the only thing counted on this page is that a report was made.</p>
+  <p class="small"><b>Tips:</b> use Chrome, Safari or Firefox on a computer with an internet connection. If the new tab doesn't open, allow pop-ups for this site or use the <b>Open report</b> link that appears.</p>
+</div>
 
 <div class="card">
   <label for="files">Sightings CSV</label>
@@ -31,6 +49,8 @@
   <div id="out"></div>
 </div>
 <div class="card"><pre id="log"></pre></div>
+
+<footer>Created by <a href="mailto:matthys.jansevanvuuren@gmail.com">Matthys Janse van Vuuren</a>.. Free to use, no sign-up needed.</footer>
 
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 <script>
