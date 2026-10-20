@@ -55,6 +55,8 @@ $('go').addEventListener('click', async () => {
   const picked = [...$('files').files];
   if (!picked.length){ log('Choose a CSV file first.'); return; }
   $('go').disabled = true; $('out').innerHTML = ''; $('log').textContent = '';
+  const w = window.open('', '_blank');
+  if (w) w.document.write('<p style="font:16px system-ui,sans-serif;padding:24px">Building your report…</p>');
   try {
     const paths = [];
     for (const f of picked){
@@ -78,9 +80,11 @@ r = birding_report.build_report(list(paths), "/home/pyodide/BirdReference.csv", 
     const [text, html] = result.toJs();
     log(text);
     const url = URL.createObjectURL(new Blob([html], {type: 'text/html'}));
-    $('out').innerHTML = `<a class="dl" href="${url}" download="birding_report.html">Download birding_report.html</a>`;
-    log('Done. Open the downloaded file in Chrome, Edge, Firefox or Safari while online.');
+    $('out').innerHTML = `<a class="dl" href="${url}" target="_blank">Open report</a> &nbsp;·&nbsp; <a class="dl" href="${url}" download="birding_report.html">Download a copy</a>`;
+    if (w) { w.location.href = url; log('Done. The report is open in a new tab.'); }
+    else log('Done. Your browser blocked the new tab, so use "Open report" above.');
   } catch (e) {
+    if (w) w.close();
     log('Error: ' + (e.message || e));
   } finally { $('go').disabled = false; }
 });
