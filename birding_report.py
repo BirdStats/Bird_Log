@@ -1154,7 +1154,14 @@ def build_data(sightings, book, have_reference):
         k = norm(sp["sci"])
         if k and k not in ref:
             ref[k] = [sp["afr"], sp["eng"]]
-
+    # Other scientific names the reference book gives each of your species, so the GBIF heatmap
+    # can recognise a bird you've seen when GBIF files it under an older or newer name
+    sci_by_group = {sp["group"]: sp["sci"] for sp in species if sp["group"]}
+    alt = {}
+    for _afr, _eng, rsci, keys in book.ref_rows:
+        mine = sci_by_group.get(book.group(keys[0])) if keys else None
+        if mine and rsci and norm(rsci) != norm(mine) and rsci not in alt.setdefault(mine, []):
+            alt[mine].append(rsci)
     data = {
         "sp": [[species[i]["sci"], species[i]["afr"], species[i]["eng"]] for i in order],
         "loc": places,
@@ -1163,6 +1170,7 @@ def build_data(sightings, book, have_reference):
         "rec": records,
         "sites": sites,
         "ref": ref,
+        "alt": alt,
     }
     return data, species, unresolved, unresolved_specials, duplicates
 
@@ -2035,7 +2043,6 @@ function renderChart(){
 $('lifeTotal').textContent = lifers.length;
 $('lifeCap').textContent = `species on your life list, first logged ${pretty(recs[lifers[0]].d)}. Bars show new species each year; the line is the running total.`;
 renderChips(); renderChart(); drawLifers();
-
 /* ---------- hotspots page: heatmap of unseen species from public GBIF records, no account needed ---------- */
 const GB = 'https://api.gbif.org/v1/';
 const hsPrefs = (() => { try { return JSON.parse(localStorage.getItem('birdlog.hs3') || '{}'); } catch (e) { return {}; } })();
@@ -2045,6 +2052,23 @@ const hsPrefs = (() => { try { return JSON.parse(localStorage.getItem('birdlog.h
 });
 function loadCache(k){ try { return JSON.parse(localStorage.getItem(k) || '{}'); } catch (e) { return {}; } }
 function saveCache(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+/* GBIF may file a bird under a different name from yours (splits, genus changes).
+   Each entry: your scientific name -> GBIF names that count as the same bird */
+const GBIF_ALIASES = {
+  'Upupa epops': ['Upupa africana'],
+  'Corypha fasciolata': ['Mirafra fasciolata'],
+  'Phalacrocorax carbo': ['Phalacrocorax lucidus'],
+  'Thinornis tricollaris': ['Anarhynchus tricollaris', 'Charadrius tricollaris'],
+  'Dessonornis caffer': ['Cossypha caffra'],
+  'Phoenicopterus roseus': ['Phoenicopterus antiquorum'],
+  'Milvus migrans': ['Milvus aegyptius'],
+  'Acrocephalus scirpaceus': ['Acrocephalus baeticatus'],
+  'Tockus rufirostris': ['Tockus erythrorhynchus'],
+  'Torgos tracheliotos': ['Torgos tracheliotus'],
+  'Tychaedon coryphoeus': ['Erythropygia coryphoeus'],
+  'Curruca subcoerulea': ['Sylvia subcaerulea']
+};
 const keyCache = loadCache('birdlog.gbifkeys');     /* your scientific name -> GBIF species key */
 const nameCache = loadCache('birdlog.gbifnames');   /* GBIF species key -> [scientific, common] */
 const cellCache = new Map();                         /* settings + cell -> facet result, for this session */
@@ -2077,7 +2101,11 @@ async function pool(items, n, fn, isCancelled){
 
 /* GBIF resolves synonyms to one accepted species key, which smooths over IOC and Clements name differences */
 async function lifeKeySet(onProgress){
-  const todo = D.sp.map(p => p[0]).filter(s => !(s in keyCache));
+  const mine = new Set(D.sp.map(p => p[0]));
+  const ALIAS = {};   /* aliases from BirdReference.csv (D.alt) plus the hand-made ones above */
+  [D.alt || {}, GBIF_ALIASES].forEach(o => Object.entries(o).forEach(([sci, a]) => { ALIAS[sci] = (ALIAS[sci] || []).concat(a); }));
+  const extra = Object.entries(ALIAS).filter(([s]) => mine.has(s)).flatMap(([, a]) => a);
+  const todo = [...new Set([...mine, ...extra])].filter(s => !keyCache[s]);   /* also retries names that failed before */
   if (todo.length){
     let done = 0;
     await pool(todo, 8, async sci => {
@@ -2087,8 +2115,8 @@ async function lifeKeySet(onProgress){
     });
     saveCache('birdlog.gbifkeys', keyCache);
   }
-  const mine = new Set(D.sp.map(p => p[0]));
-  return new Set(Object.entries(keyCache).filter(([s, k]) => k && mine.has(s)).map(([, k]) => String(k)));
+  const wanted = new Set([...mine, ...extra]);
+  return new Set(Object.entries(keyCache).filter(([s, k]) => k && wanted.has(s)).map(([, k]) => String(k)));
 }
 async function resolveNames(keys, isCancelled){
   const todo = [...new Set(keys)].filter(k => !nameCache[k]);
@@ -2114,8 +2142,8 @@ function seasonMonths(){
   const m = new Date().getMonth() + 1;
   return [((m + 10) % 12) + 1, m, (m % 12) + 1];
 }
-const MIN_RECORDS = 2;   /* a species needs at least this many records in a square, to skip one-off vagrants and misidentifications */
-const MAX_CELLS = 700;   /* about one minute of GBIF requests */
+const MIN_RECORDS = 1;   /* a species needs at least this many records in a square, to skip one-off vagrants and misidentifications */
+const MAX_CELLS = 2081;   /* about one minute of GBIF requests */
 
 const RAMP2 = ['#FBEFCF','#E3A91B','#B5651D','#6B2E1A'];
 function rampColor(t){
